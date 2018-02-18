@@ -5,7 +5,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -13,7 +12,6 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -46,7 +44,6 @@ import java.util.Locale;
 import io.intelehealth.client.R;
 import io.intelehealth.client.activities.camera_activity.CameraActivity;
 import io.intelehealth.client.activities.patient_detail_activity.PatientDetailActivity;
-import io.intelehealth.client.activities.setting_activity.SettingsActivity;
 import io.intelehealth.client.database.LocalRecordsDatabaseHelper;
 import io.intelehealth.client.objects.Patient;
 import io.intelehealth.client.utilities.HelperMethods;
@@ -67,6 +64,7 @@ public class IdentificationActivity extends AppCompatActivity {
     EditText mDOB;
     EditText mPhoneNum;
     EditText mAge;
+    EditText mAgeInMonths;
     EditText mAddress1;
     EditText mAddress2;
     AutoCompleteTextView mCity;
@@ -81,7 +79,6 @@ public class IdentificationActivity extends AppCompatActivity {
     EditText stateText;
     Spinner mCountry;
     Spinner mState;
-
     EditText casteText;
     EditText economicText;
     EditText educationText;
@@ -134,6 +131,7 @@ public class IdentificationActivity extends AppCompatActivity {
         mDOB = (EditText) findViewById(R.id.identification_birth_date_text_view);
         mPhoneNum = (EditText) findViewById(R.id.identification_phone_number);
         mAge = (EditText) findViewById(R.id.identification_age);
+        mAgeInMonths =(EditText) findViewById(R.id.identification_age1);
         mAddress1 = (EditText) findViewById(R.id.identification_address1);
         mAddress2 = (EditText) findViewById(R.id.identification_address2);
         mCity = (AutoCompleteTextView) findViewById(R.id.identification_city);
@@ -149,6 +147,13 @@ public class IdentificationActivity extends AppCompatActivity {
         mCaste = (Spinner) findViewById(R.id.spinner_caste);
         mEducation = (Spinner) findViewById(R.id.spinner_education);
         mEconomicStatus = (Spinner) findViewById(R.id.spinner_economic_status);
+
+        //TODO: Change this back for other deployments
+        mMiddleName.setVisibility(View.GONE);
+        mAddress1.setVisibility(View.GONE);
+        mAddress2.setVisibility(View.GONE);
+        mRelationship.setVisibility(View.GONE);
+        mPostal.setVisibility(View.GONE);
 
         casteText = (EditText) findViewById(R.id.identification_caste);
         educationText = (EditText) findViewById(R.id.identification_education);
@@ -371,17 +376,36 @@ public class IdentificationActivity extends AppCompatActivity {
                 dob.set(year, monthOfYear, dayOfMonth);
 
                 //Formatted so that it can be read the way the user sets
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
                 dob.set(year, monthOfYear, dayOfMonth);
                 String dobString = simpleDateFormat.format(dob.getTime());
 
 
                 //Age should be calculated based on the date
                 int age = today.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
-                if (today.get(Calendar.DAY_OF_YEAR) < dob.get(Calendar.DAY_OF_YEAR)) {
-                    age--;
+                int ageInMonths = today.get(Calendar.MONTH) - dob.get(Calendar.MONTH);
+
+
+                if(age<0) {
+                    age = 0;
+                    ageInMonths=0;
                 }
+
+
+
+
+//                if (today.get(Calendar.DAY_OF_YEAR) < dob.get(Calendar.DAY_OF_YEAR)) {
+//
+////
+//
+////                }
+//                else if(today.get(Calendar.DAY_OF_MONTH) < dob.get(Calendar.DAY_OF_MONTH)){
+//                        ageInMonths--;
+//                   }
+
                 mAge.setText(String.valueOf(age));
+                mAgeInMonths.setText((String.valueOf(ageInMonths)));
+
                 mDOB.setText(dobString);
             }
         }, today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH));
@@ -407,11 +431,52 @@ public class IdentificationActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 if (!s.toString().trim().isEmpty()) {
-                    if (getCurrentFocus().getId() == mAge.getId() || mDOB.getText().toString().trim().isEmpty()) {
+                    if ((getCurrentFocus() != null) &&
+                            (getCurrentFocus().getId() == mAge.getId()
+                                    || mDOB.getText().toString().trim().isEmpty())) {
                         Calendar calendar = Calendar.getInstance();
                         int curYear = calendar.get(Calendar.YEAR);
+                        int curMonth = calendar.get(Calendar.MONTH);
+                        curMonth++;
                         int birthYear = curYear - Integer.valueOf(s.toString().trim());
-                        String calcDOB = String.valueOf(birthYear) + "-01-01";
+//                        int birthMonth = curMonth - Integer.valueOf(s.toString().trim());
+                        String calcDOB = String.valueOf(birthYear) + "-" +  (String.valueOf(curMonth))+ "-01";
+                        mDOB.setText(calcDOB);
+                    }
+                }
+            }
+        });
+
+
+
+
+        mAgeInMonths.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!s.toString().trim().isEmpty()) {
+                    if (getCurrentFocus().getId() == mAgeInMonths.getId() || mDOB.getText().toString().trim().isEmpty()) {
+                        Calendar calendar = Calendar.getInstance();
+                        int curYear = calendar.get(Calendar.YEAR);
+                        int curMonth = calendar.get(Calendar.MONTH);
+                        curMonth++;
+                        int birthMonth = curMonth - Integer.valueOf(s.toString().trim());
+                        int newMonth  = birthMonth;
+
+//                        int birthYear = curYear - Integer.valueOf(s.toString().trim());
+                        if(newMonth > 12){
+                            newMonth = 0;
+                        }
+//                        int birthMonth = curMonth - Integer.valueOf(s.toString().trim());
+
+                        String calcDOB = String.valueOf(curYear) + "-" +  String.valueOf(newMonth) + "-01";
                         mDOB.setText(calcDOB);
                     }
                 }
