@@ -178,7 +178,7 @@ public class BackupCloud {
                 boolean isSuccess = backup.createFileInMemory(context, false);
                 if (isSuccess) {
                     Intent serviceIntent = new Intent(context, ImageDownloadService.class);
-                   //context.startService(serviceIntent); removed on 2018.07.18 due to issues finding the right images
+                   context.startService(serviceIntent); //removed on 2018.07.18 due to issues finding the right images
                 }
             } catch (IOException e1) {
                 e1.printStackTrace();
@@ -333,40 +333,42 @@ public class BackupCloud {
                         dialog.dismiss();
                         Toast.makeText(context, context.getString(R.string.db_backup_unavailable), Toast.LENGTH_SHORT).show();
                     } else {
-                        final ParseFile file = (ParseFile) object.get("db");
-                        file.getDataInBackground(new GetDataCallback() {
-                            @Override
-                            public void done(byte[] data, ParseException e) {
-                                File myDir = new File(Environment.getExternalStorageDirectory() + File.separator + "InteleHealth_DB");
-                                if (myDir.exists()) {
-                                } else {
-                                    myDir.mkdir();
-                                }
-                                //file created inside internal memory, outside app package, doesnt delete if app is uninstalled
-                                String newfilepath = Environment.getExternalStorageDirectory() + File.separator + "InteleHealth_DB" +
-                                        File.separator + "Intelehealth.db"; // directory: Intelehealth_DB   ,  filename: Intelehealth.db
-                                Log.d("newfilepath", newfilepath);
-                                File myfile = new File(newfilepath);
-                                if (myfile.exists()) myfile.delete();
-                                try {
-                                    myfile.createNewFile();
-                                    FileOutputStream fileOutputStream = new FileOutputStream(myfile);
-                                    fileOutputStream.write(data);
-                                    fileOutputStream.close();
-                                    boolean isSuccess = backup.createFileInMemory(context, false);
-                                    if (isSuccess) {
-                                        Intent serviceIntent = new Intent(context, ImageDownloadService.class);
-                                        //context.getApplicationContext().startService(serviceIntent); //removed on 2018.07.18
+                        if (e == null) {
+                            final ParseFile file = (ParseFile) object.get("db");
+                            file.getDataInBackground(new GetDataCallback() {
+                                @Override
+                                public void done(byte[] data, ParseException e) {
+                                    File myDir = new File(Environment.getExternalStorageDirectory() + File.separator + "InteleHealth_DB");
+                                    if (myDir.exists()) {
+                                    } else {
+                                        myDir.mkdir();
                                     }
+                                    //file created inside internal memory, outside app package, doesnt delete if app is uninstalled
+                                    String newfilepath = Environment.getExternalStorageDirectory() + File.separator + "InteleHealth_DB" +
+                                            File.separator + "Intelehealth.db"; // directory: Intelehealth_DB   ,  filename: Intelehealth.db
+                                    Log.d("newfilepath", newfilepath);
+                                    File myfile = new File(newfilepath);
+                                    if (myfile.exists()) myfile.delete();
+                                    try {
+                                        myfile.createNewFile();
+                                        FileOutputStream fileOutputStream = new FileOutputStream(myfile);
+                                        fileOutputStream.write(data);
+                                        fileOutputStream.close();
+                                        boolean isSuccess = backup.createFileInMemory(context, false);
+                                        if (isSuccess) {
+                                             Intent serviceIntent = new Intent(context, ImageDownloadService.class);
+                                            context.getApplicationContext().startService(serviceIntent); //removed on 2018.07.18
+                                        }
 
-                                } catch (FileNotFoundException exfnf) {
-                                } catch (IOException exio) {
-                                    Toast.makeText(context, context.getString(R.string.db_file_write_error), Toast.LENGTH_SHORT).show();
-                                } finally {
-                                    dialog.dismiss();
+                                    } catch (FileNotFoundException exfnf) {
+                                    } catch (IOException exio) {
+                                        Toast.makeText(context, context.getString(R.string.db_file_write_error), Toast.LENGTH_SHORT).show();
+                                    } finally {
+                                        dialog.dismiss();
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 }
             });

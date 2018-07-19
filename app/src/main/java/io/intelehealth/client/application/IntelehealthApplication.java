@@ -13,6 +13,8 @@ import android.util.Log;
 
 import com.parse.Parse;
 
+import java.util.concurrent.TimeUnit;
+
 import io.intelehealth.client.activities.setting_activity.SettingsActivity;
 import io.intelehealth.client.database.DelayedJobQueueProvider;
 import io.intelehealth.client.database.LocalRecordsDatabaseHelper;
@@ -46,7 +48,10 @@ public class IntelehealthApplication extends Application implements Application.
             Dispatcher dispatcher = new Dispatcher();
             dispatcher.setMaxRequestsPerHost(1);
             dispatcher.setMaxRequests(4);
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .connectTimeout(2, TimeUnit.MINUTES)
+                    .writeTimeout(2,TimeUnit.MINUTES)
+                    .readTimeout(2,TimeUnit.MINUTES);
             builder.dispatcher(dispatcher);
 
             Parse.initialize(new Parse.Configuration.Builder(this)

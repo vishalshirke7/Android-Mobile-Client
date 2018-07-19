@@ -5,12 +5,15 @@ package io.intelehealth.client.services;
  * Github : @dbarretto
  */
 
+import android.app.DownloadManager;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
@@ -22,6 +25,7 @@ import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -42,6 +46,8 @@ public class ImageDownloadService extends IntentService {
     Integer files_to_download = 0;
     Integer files_downloaded = 0;
 
+     DownloadManager downloadManager;
+
     private static final String TAG = ImageDownloadService.class.getSimpleName();
 
     /**
@@ -59,6 +65,8 @@ public class ImageDownloadService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
+
+        downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
 
         Toast.makeText(this, getString(R.string.image_downloading_service_message), Toast.LENGTH_SHORT).show();
 
@@ -80,7 +88,7 @@ public class ImageDownloadService extends IntentService {
         String[] coloumns = {"_id", "parse_id", "image_path", "image_type", "delete_status"};
         Cursor cursor = localdb.query("image_records", coloumns, null, null, null, null, null);
         if (cursor != null && cursor.moveToFirst()) {
-            files_to_download = files_to_download + (cursor.getCount() - 1);
+            files_to_download = files_to_download + (cursor.getCount());
             do {
                 String parse_id = cursor.getString(cursor.getColumnIndexOrThrow("parse_id"));
                 String image_file_path = cursor.getString(cursor.getColumnIndexOrThrow("image_path"));
@@ -90,10 +98,10 @@ public class ImageDownloadService extends IntentService {
                 File image_file = new File(image_file_path);
                 if (!image_file.exists()) {
                     image_file.mkdirs();
-                    if (delete_status.equals(0) || parse_id == null || !parse_id.isEmpty()) {
+                    if (delete_status.equals(1) || parse_id == null || !parse_id.isEmpty()) {
                         String selection = "_id =?";
                         String[] selectionArgs = {String.valueOf(id)};
-                        localdb.delete("image_records", selection, selectionArgs);
+                        //localdb.delete("image_records", selection, selectionArgs);
                     }
                     if (parse_id != null && !parse_id.isEmpty()) {
                         try {
@@ -101,6 +109,9 @@ public class ImageDownloadService extends IntentService {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+                    }else{
+                        if(image_file.exists())image_file.delete();
+                        notifyDownload();
                     }
                 } else {
                     notifyDownload();
@@ -111,9 +122,9 @@ public class ImageDownloadService extends IntentService {
     }
 
     private void downloadImagesFromParse(final Context context, String parse_id, String image_type, final File img_file) throws InterruptedException {
-        Thread.sleep(500);
         if (parse_id != null && !parse_id.isEmpty() &&
                 image_type != null && !image_type.isEmpty()) {
+            String parse_id_clean = parse_id.replace("\n", "").trim();
             switch (image_type) {
                 case "AD": {
                     image_type = "AdditionalDocuments";
@@ -129,32 +140,33 @@ public class ImageDownloadService extends IntentService {
                 }
             }
             ParseQuery<ParseObject> query = ParseQuery.getQuery(image_type);
-            query.whereEqualTo("objectId", parse_id);
+            query.whereEqualTo("objectId", parse_id_clean);
             query.getFirstInBackground(new GetCallback<ParseObject>() {
                 @Override
                 public void done(ParseObject object, ParseException e) {
                     if (object == null) {
                         Toast.makeText(context, getString(R.string.error_img_unavailable), Toast.LENGTH_SHORT).show();
+                        if(img_file.exists())img_file.delete();
                         notifyDownload();
                     } else {
+                        try {
+                            Thread.sleep(15000);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
                         final ParseFile file = (ParseFile) object.get("Image");
-                        file.getDataInBackground(new GetDataCallback() {
-                            @Override
-                            public void done(byte[] data, ParseException e) {
+                        final String url = file.getUrl();
+                        Uri Download_Uri = Uri.parse(url);
+                        DownloadManager.Request request = new DownloadManager.Request(Download_Uri);
+                        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE);
+                        request.setAllowedOverRoaming(false);
+                        request.setVisibleInDownloadsUi(true);
+                        request.setDestinationInExternalFilesDir(ImageDownloadService.this,Environment.DIRECTORY_PICTURES,img_file.getAbsolutePath());
 
-                                if (img_file.exists()) img_file.delete();
-                                try {
-                                    img_file.createNewFile();
-                                    FileOutputStream fileOutputStream = new FileOutputStream(img_file);
-                                    fileOutputStream.write(data);
-                                    fileOutputStream.close();
-                                    notifyDownload();
-                                } catch (FileNotFoundException exfnf) {
-                                } catch (IOException exio) {
-                                    Toast.makeText(context, getString(R.string.error_img_download_failed), Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        });
+                        long refid = downloadManager.enqueue(request);
+
+
+
                     }
                 }
             });
@@ -167,25 +179,23 @@ public class ImageDownloadService extends IntentService {
         String[] coloumns = {"_id", "openmrs_uuid", "patient_photo"};
         Cursor cursor = localdb.query("patient", coloumns, null, null, null, null, null);
         if (cursor != null && cursor.moveToFirst()) {
-            files_to_download = files_to_download + (cursor.getCount() - 1);
+            files_to_download = files_to_download + (cursor.getCount());
             do {
                 String openmrs_uuid = cursor.getString(cursor.getColumnIndexOrThrow("openmrs_uuid"));
                 String image_file_path = cursor.getString(cursor.getColumnIndexOrThrow("patient_photo"));
                 Long id = cursor.getLong(cursor.getColumnIndexOrThrow("_id"));
                 if (image_file_path != null && !image_file_path.isEmpty()) {
                     File image_file = new File(image_file_path);
-                    if (!image_file.exists()) {
-                        image_file.mkdirs();
-                        if (openmrs_uuid == null || !openmrs_uuid.isEmpty()) {
+                    if (!image_file.exists())
+                        if (openmrs_uuid != null || !openmrs_uuid.isEmpty()) {
                             try {
                                 downloadProfilePhotoFromParse(this, openmrs_uuid, image_file);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
-                        }
-                    } else {
-                        notifyDownload();
                     }
+                } else {
+                    notifyDownload();
                 }
             } while (cursor.moveToNext());
         }
@@ -193,7 +203,7 @@ public class ImageDownloadService extends IntentService {
 
     private void downloadProfilePhotoFromParse(final Context context, String openmrs_uuid, final File img_file) throws InterruptedException {
         ParseQuery<ParseObject> query = ParseQuery.getQuery("Profile");
-        query.whereEqualTo("PatientID", openmrs_uuid);
+        query.whereEqualTo("PatientID", openmrs_uuid.trim());
         query.getFirstInBackground(new GetCallback<ParseObject>() {
             @Override
             public void done(ParseObject object, ParseException e) {
@@ -201,23 +211,21 @@ public class ImageDownloadService extends IntentService {
                     Toast.makeText(context, getString(R.string.error_img_unavailable), Toast.LENGTH_SHORT).show();
                     notifyDownload();
                 } else {
+                    try {
+                        Thread.sleep(15000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
                     final ParseFile file = (ParseFile) object.get("Image");
-                    file.getDataInBackground(new GetDataCallback() {
-                        @Override
-                        public void done(byte[] data, ParseException e) {
-                            if (img_file.exists()) img_file.delete();
-                            try {
-                                img_file.createNewFile();
-                                FileOutputStream fileOutputStream = new FileOutputStream(img_file);
-                                fileOutputStream.write(data);
-                                fileOutputStream.close();
-                                notifyDownload();
-                            } catch (FileNotFoundException exfnf) {
-                            } catch (IOException exio) {
-                                Toast.makeText(context, getString(R.string.error_img_download_failed), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
+                    final String url = file.getUrl();
+                    Uri Download_Uri = Uri.parse(url);
+                    DownloadManager.Request request = new DownloadManager.Request(Download_Uri);
+                    request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE);
+                    request.setAllowedOverRoaming(false);
+                    request.setVisibleInDownloadsUi(true);
+                    request.setDestinationInExternalFilesDir(ImageDownloadService.this,Environment.DIRECTORY_PICTURES,img_file.getAbsolutePath());
+
+                    long refid = downloadManager.enqueue(request);
                 }
             }
         });
