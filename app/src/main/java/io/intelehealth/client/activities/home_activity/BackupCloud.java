@@ -122,7 +122,11 @@ public class BackupCloud {
         //Contains logic to upload to cloud
         if (!isNetworkAvailable()) {
             Toast.makeText(context, context.getString(R.string.no_network), Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
+            if(dialog != null)
+            {
+                dialog.dismiss();
+            }
+
             //Failed Task
             if (queue_id == null || queue_id.equals(-1)) {
                 addJobToQueue();
