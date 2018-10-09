@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -98,6 +99,8 @@ public class SetupActivity extends AppCompatActivity {
 
     private Button mLoginButton;
 
+    private Button mURLOK;
+
     private Spinner mDropdownLocation;
 
     private TextView mAndroidIdTextView;
@@ -171,6 +174,7 @@ public class SetupActivity extends AppCompatActivity {
         });
 
 
+        mURLOK = (Button) findViewById(R.id.button_url); //for OK Buttton.
         mUrlField = (EditText) findViewById(R.id.editText_URL);
 
         Button submitButton = (Button) findViewById(R.id.setup_submit_button);
@@ -213,32 +217,46 @@ public class SetupActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
 
-        mUrlField.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+       mUrlField.addTextChangedListener(new TextWatcher() {
+           @Override
+           public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-            }
+           }
 
+           @Override
+           public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+           }
+
+           @RequiresApi(api = Build.VERSION_CODES.FROYO)
+           @Override
+           public void afterTextChanged(Editable s) {
+               isLocationFetched = false;
+               LocationArrayAdapter adapter = new LocationArrayAdapter(SetupActivity.this, new ArrayList<String>());
+               mDropdownLocation.setAdapter(adapter);
+           }
+       });
+        mURLOK.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            public void onClick(View v) {
                 isLocationFetched = false;
                 LocationArrayAdapter adapter = new LocationArrayAdapter(SetupActivity.this, new ArrayList<String>());
                 mDropdownLocation.setAdapter(adapter);
-            }
 
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (!mUrlField.getText().toString().trim().isEmpty() && mUrlField.getText().toString().length() > 12) {
+                if (!mUrlField.getText().toString().trim().isEmpty() && mUrlField.getText().toString().length() > 11) {
                     if (Patterns.WEB_URL.matcher(mUrlField.getText().toString()).matches()) {
                         String BASE_URL = "http://" + mUrlField.getText().toString() + ":8080/openmrs/ws/rest/v1/";
                         if (URLUtil.isValidUrl(BASE_URL) && !isLocationFetched)
                             getLocationFromServer(BASE_URL);
                         else
-                            Toast.makeText(SetupActivity.this, getString(R.string.url_invalid), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(SetupActivity.this, getString(R.string.error_location_not_fetched), Toast.LENGTH_SHORT).show();
                     }
+                    else
+                        Toast.makeText(SetupActivity.this, getString(R.string.error_location_not_fetched), Toast.LENGTH_SHORT).show();
                 }
+                else
+                    Toast.makeText(SetupActivity.this, getString(R.string.error_location_not_fetched), Toast.LENGTH_SHORT).show();
             }
-
         });
 
 

@@ -53,7 +53,7 @@
     <string name="error_field_required">This field is required</string>
     <string name="error_network">Network Error</string>
     <string name="error_location_not_selected">Please select a value form the location dropdown</string>
-    <string name="error_location_not_fetched">Unable to fetch locations</string>
+    <string name="error_location_not_fetched">Please correct your URL</string>
     <string name="permission_rationale">"Contacts permissions are needed for providing email completions."
     </string>
     <string name="device_id">Device ID:</string>

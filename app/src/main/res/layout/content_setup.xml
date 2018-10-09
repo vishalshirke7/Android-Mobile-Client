@@ -43,18 +43,37 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
                 android:text="What is the URL to OpenMRS?" />
 
-
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="1">
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8">
 
                 <EditText
                     android:id="@+id/editText_URL"
-                    android:inputType="textUri"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="URL" />
+                    android:hint="URL"
+                    android:inputType="textUri" />
             </android.support.design.widget.TextInputLayout>
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:id="@+id/button_url"
+                    style="?android:textAppearanceMedium"
+                    android:text="OK"
+                    android:background="@drawable/round_corner"
+                    android:textColor="#fff"
+                    android:textStyle="bold"
+                    android:layout_weight="0.2"
+                    />
+            </LinearLayout>
 
 
             <Space
@@ -158,7 +177,8 @@
                     android:imeOptions="actionNext"
                     android:inputType="textPassword"
                     android:maxLines="1"
-                    android:singleLine="true" />
+                    android:singleLine="true"
+                    tools:ignore="InvalidImeActionId" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -176,7 +196,8 @@
                     android:imeOptions="actionUnspecified"
                     android:inputType="textPassword"
                     android:maxLines="1"
-                    android:singleLine="true" />
+                    android:singleLine="true"
+                    tools:ignore="InvalidImeActionId" />
 
             </android.support.design.widget.TextInputLayout>
 
