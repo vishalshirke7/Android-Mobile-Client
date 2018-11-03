@@ -82,7 +82,7 @@ import io.intelehealth.client.services.ClientService;
 import io.intelehealth.client.services.PrescriptionDownloadService;
 import io.intelehealth.client.services.UpdateVisitService;
 import io.intelehealth.client.utilities.ConceptId;
-
+import io.intelehealth.client.utilities.HelperMethods;
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.OnNeverAskAgain;
 import permissions.dispatcher.OnPermissionDenied;
@@ -1390,14 +1390,21 @@ public class VisitSummaryActivity extends AppCompatActivity {
         String mOccupation = patient.getOccupation();
         String mGender = patient.getGender();
 
-        Calendar c = Calendar.getInstance();
+       /* Calendar c = Calendar.getInstance();
         System.out.println("Current time => " + c.getTime());
-
-
-        SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy");
+        SimpleDateFormat df = new SimpleDateFormat("dd-MMMM-yyyy");
         String mDate = df.format(c.getTime());
-
-
+*/
+        String[] columnsToReturn = {"start_datetime"};
+        String visitIDorderBy = "start_datetime";
+        String visitIDSelection = "_id = ?";
+        String[] visitIDArgs = {visitID};
+        final Cursor visitIDCursor = db.query("visit", columnsToReturn, visitIDSelection, visitIDArgs, null, null, visitIDorderBy);
+        visitIDCursor.moveToLast();
+        String startDateTime = visitIDCursor.getString(visitIDCursor.getColumnIndexOrThrow("start_datetime"));
+        visitIDCursor.close();
+        String mDate= HelperMethods.SimpleDatetoLongDate(startDateTime);
+        
         String mPatHist = patHistory.getValue();
         if (mPatHist == null) {
             mPatHist = "";

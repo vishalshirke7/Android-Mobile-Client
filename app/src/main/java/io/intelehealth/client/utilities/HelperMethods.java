@@ -37,6 +37,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 
 import io.intelehealth.client.R;
@@ -62,18 +66,62 @@ public class HelperMethods {
         if (s == null) return 0;
 
         String[] components = s.split("\\-");
-
         int year = Integer.parseInt(components[0]);
-        int month = Integer.parseInt(components[1]);
+        String month = (components[1]);
         int day = Integer.parseInt(components[2]);
 
-        LocalDate birthdate = new LocalDate(year, month, day);          //Birth date
+        Log.d("Hi_ap_month",month);
+
+        int monthInt = 0;
+        switch (month){
+            case  "January" :  monthInt =1;break;
+            case  "February" :  monthInt =2;break;
+            case  "March" :  monthInt =3;break;
+            case  "April" :  monthInt =4;break;
+            case  "May" :  monthInt =5;break;
+            case  "June" :  monthInt =6;break;
+            case  "July" :  monthInt =7;break;
+            case  "August" :  monthInt =8;break;
+            case  "September" :  monthInt =9;break;
+            case  "October" :  monthInt =10;break;
+            case  "November" :  monthInt =11;break;
+            case  "December" :  monthInt =12;break;
+        }
+        Log.d("To check Month",monthInt+"");
+        LocalDate birthdate = new LocalDate(year, monthInt, day);          //Birth date
         LocalDate now = new LocalDate();                    //Today's date
         Period period = new Period(birthdate, now, PeriodType.yearMonthDay());
 
         return period.getYears();
     }
 
+    public static String SimpleDatetoLongFollowupDate(String dateString) {
+        String formattedDate = null;
+        try {
+            DateFormat originalFormat = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
+            DateFormat targetFormat = new SimpleDateFormat("dd-MMMM-yyyy");
+            Date date = originalFormat.parse(dateString);
+            formattedDate = targetFormat.format(date);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+        return formattedDate;
+    }
+
+    public static String SimpleDatetoLongDate(String dateString) {
+        String formattedDate = null;
+        try {
+            DateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+            DateFormat targetFormat = new SimpleDateFormat("dd-MMMM-yyyy");
+            Date date = originalFormat.parse(dateString);
+            formattedDate = targetFormat.format(date);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+        return formattedDate;
+    }
+
+/*
     public static int getMonth(String s1) {
         if (s1 == null) return 0;
 
@@ -88,6 +136,7 @@ public class HelperMethods {
         Period period = new Period(birthdate1, now, PeriodType.yearMonthDay());
         return period.getMonths();
     }
+*/
     /**
      * Turns the mind map into a JSON Object that can be manipulated.
      *
@@ -136,6 +185,7 @@ public class HelperMethods {
         );
         return image;
     }
+
 
     static String[] startImageCapture(Context context, Activity activity) {
 
